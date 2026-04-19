@@ -1,5 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 import appCss from "../styles.css?url";
 
@@ -70,6 +71,7 @@ function RootComponent() {
     <>
       <Outlet />
       <Toaster richColors position="top-center" />
+      <Analytics />
     </>
   );
 }
