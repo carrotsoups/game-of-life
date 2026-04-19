@@ -18,7 +18,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         hero: "bg-[image:var(--gradient-hero)] text-primary-foreground shadow-[var(--shadow-elegant)] hover:shadow-[var(--shadow-glow)] transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5",
         warm: "bg-[image:var(--gradient-warm)] text-primary-foreground shadow-[var(--shadow-soft)] hover:opacity-95",
-        success: "bg-[image:var(--gradient-success)] text-primary-foreground shadow-[var(--shadow-soft)] hover:opacity-95",
+        success:
+          "bg-[image:var(--gradient-success)] text-primary-foreground shadow-[var(--shadow-soft)] hover:opacity-95",
       },
       size: {
         default: "h-10 px-4 py-2",
