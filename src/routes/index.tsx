@@ -149,7 +149,7 @@ function HomePage() {
                 id="teacher"
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
-                placeholder="Mr. Rivera"
+                placeholder="Mr. MathIntyre"
                 className="h-11"
               />
             </div>
@@ -182,7 +182,7 @@ function HomePage() {
                 id="code"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="ABCDE"
+                placeholder="YAHOO"
                 maxLength={5}
                 className="h-11 text-center font-mono text-2xl tracking-[0.4em]"
               />
@@ -193,7 +193,7 @@ function HomePage() {
                 id="name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Alex"
+                placeholder="jimmy jon"
                 className="h-11"
               />
             </div>
