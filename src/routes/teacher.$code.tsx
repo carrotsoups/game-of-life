@@ -120,13 +120,36 @@ function TeacherDashboard() {
   const advance = async (toPhase: number) => {
     if (!roomId) return;
     setWorking(true);
-    const status = toPhase >= PHASES.FINISHED ? "finished" : toPhase === 0 ? "waiting" : "active";
-    const { error } = await supabase
-      .from("rooms")
-      .update({ phase: toPhase, status })
-      .eq("id", roomId);
-    setWorking(false);
-    if (error) toast.error("Could not advance");
+    try {
+      // When resetting to lobby, clear all student responses and assignments
+      if (toPhase === PHASES.LOBBY) {
+        const { error: deleteResponsesError } = await supabase
+          .from("responses")
+          .delete()
+          .eq("room_id", roomId);
+        if (deleteResponsesError) throw deleteResponsesError;
+        const { error: deleteAssignmentsError } = await supabase
+          .from("assignments")
+          .delete()
+          .eq("room_id", roomId);
+        if (deleteAssignmentsError) throw deleteAssignmentsError;
+        setResponses([]);
+      }
+      const status = toPhase >= PHASES.FINISHED ? "finished" : toPhase === 0 ? "waiting" : "active";
+      const { error } = await supabase
+        .from("rooms")
+        .update({ phase: toPhase, status })
+        .eq("id", roomId);
+      if (error) throw error;
+      if (toPhase === PHASES.LOBBY) {
+        toast.success("Room reset to lobby");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not advance");
+    } finally {
+      setWorking(false);
+    }
   };
 
   // When moving into ASSIGNMENT phase, build & store assignments

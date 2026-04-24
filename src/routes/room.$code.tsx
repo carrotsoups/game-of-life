@@ -116,6 +116,13 @@ function StudentRoom() {
     };
   }, [roomId, participantId]);
 
+  useEffect(() => {
+    if (phase === PHASES.LOBBY) {
+      setSubmittedPhases(new Set());
+      setAssignment(null);
+    }
+  }, [phase]);
+
   const meta = PHASE_META[phase];
   const inputP = inputPhaseForLabel(phase);
   const alreadySubmitted = inputP ? submittedPhases.has(inputP) : false;
