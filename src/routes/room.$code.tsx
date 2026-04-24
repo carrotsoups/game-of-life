@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +12,9 @@ import {
   PHASE_META,
   fieldsForPhase,
   inputPhaseForLabel,
-  computePlan,
+  computePhase1,
+  computePhase2,
+  computePhase3,
   checkAnswer,
   formatCurrency,
   type LifePlan,
@@ -117,6 +119,40 @@ function StudentRoom() {
   const meta = PHASE_META[phase];
   const inputP = inputPhaseForLabel(phase);
   const alreadySubmitted = inputP ? submittedPhases.has(inputP) : false;
+  const [calcSubmittingPhase, setCalcSubmittingPhase] = useState<number | null>(null);
+
+  const getCalculationTarget = (phase: number) => {
+    if (!assignment) return 0;
+    if (phase === 10) return computePhase1(assignment.assigned_plan);
+    if (phase === 11) return computePhase2(assignment.assigned_plan);
+    return computePhase3(assignment.assigned_plan);
+  };
+
+  const handleSubmitCalculationPhase = async (phase: number, value: number) => {
+    if (!roomId || !participantId || !assignment) return null;
+    const correct = getCalculationTarget(phase);
+    setCalcSubmittingPhase(phase);
+    const result = checkAnswer(value, correct);
+
+    const { error } = await supabase.from("responses").upsert(
+      {
+        room_id: roomId,
+        participant_id: participantId,
+        phase,
+        answer: { value },
+      },
+      { onConflict: "participant_id,phase" },
+    );
+
+    setCalcSubmittingPhase(null);
+    if (error) {
+      toast.error("Could not submit");
+      return null;
+    }
+
+    setSubmittedPhases((s) => new Set(s).add(phase));
+    return result;
+  };
 
   const handleJoinExisting = async () => {
     if (!roomId) return;
@@ -200,6 +236,9 @@ function StudentRoom() {
         assignment={assignment}
         roomId={roomId}
         participantId={participantId}
+        submittedPhases={submittedPhases}
+        calcSubmittingPhase={calcSubmittingPhase}
+        handleSubmitCalculationPhase={handleSubmitCalculationPhase}
       />
     </main>
   );
@@ -213,6 +252,9 @@ function StudentBody({
   assignment,
   roomId,
   participantId,
+  submittedPhases,
+  calcSubmittingPhase,
+  handleSubmitCalculationPhase,
 }: {
   phase: number;
   inputP: 1 | 3 | 5 | null;
@@ -221,6 +263,9 @@ function StudentBody({
   assignment: Assignment | null;
   roomId: string | null;
   participantId: string;
+  submittedPhases: Set<number>;
+  calcSubmittingPhase: number | null;
+  handleSubmitCalculationPhase: (phase: number, value: number) => Promise<"high" | "low" | "correct" | null>;
 }) {
   if (phase === PHASES.LOBBY) {
     return (
@@ -279,11 +324,11 @@ function StudentBody({
       );
     }
     return (
-      <CalculationCard
+      <CalculationStage
         plan={assignment.assigned_plan}
-        correct={assignment.correct_value}
-        roomId={roomId}
-        participantId={participantId}
+        submittedPhases={submittedPhases}
+        submittingPhase={calcSubmittingPhase}
+        onSubmitPhase={handleSubmitCalculationPhase}
       />
     );
   }
@@ -323,7 +368,8 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
         <Section
           title="Early career (18→50)"
           rows={[
-            ["Monthly invest", `$${plan.phase1.monthly}/mo`],
+            ["Invest", `$${plan.phase1.amount} ${plan.phase1.freq}`],
+            ["From → to", `${plan.phase1.A} → ${plan.phase1.B}`],
             ["Return", `${plan.phase1.rate}%/yr`],
           ]}
         />
@@ -331,22 +377,21 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           title="Hold (50→65)"
           rows={[
             ["Vehicle", plan.phase2.vehicle],
+            ["Until age", `${plan.phase2.C}`],
             ["Return", `${plan.phase2.rate}%/yr`],
-            ["Extra", `$${plan.phase2.extra}/mo`],
           ]}
         />
         <Section
           title="Retirement (65→80)"
           rows={[
-            ["Lifestyle", plan.phase3.lifestyle],
-            ["Withdraw", `$${plan.phase3.withdraw}/mo`],
-            ["Return", `${plan.phase3.rate}%/yr`],
+            ["Location", plan.phase3.location],
+            ["Work as", plan.phase3.occupation],
+            ["Withdraw age", `${plan.phase3.D}`],
           ]}
         />
       </div>
       <div className="border-t bg-muted/40 p-4 text-center text-xs text-muted-foreground">
-        Get ready — when the calculation phase begins you'll need to compute the final balance at
-        age 80.
+        You'll need to calculate how much money you end up with at the end of each phase.
       </div>
     </Card>
   );
@@ -370,96 +415,134 @@ function Section({ title, rows }: { title: string; rows: [string, string][] }) {
   );
 }
 
-function CalculationCard({
+function CalculationStage({
   plan,
-  correct,
-  roomId,
-  participantId,
+  submittedPhases,
+  submittingPhase,
+  onSubmitPhase,
 }: {
   plan: LifePlan;
-  correct: number;
-  roomId: string | null;
-  participantId: string;
+  submittedPhases: Set<number>;
+  submittingPhase: number | null;
+  onSubmitPhase: (phase: number, value: number) => Promise<"high" | "low" | "correct" | null>;
+}) {
+  const cards = [
+    {
+      phase: 10,
+      title: "Phase 1 outcome",
+      description: "Estimate the balance after the early-career investment stage.",
+      label: "Phase 1 balance",
+    },
+    {
+      phase: 11,
+      title: "Phase 2 outcome",
+      description: "Estimate the balance after the mid-life holding stage.",
+      label: "Phase 2 balance",
+    },
+    {
+      phase: 12,
+      title: "Phase 3 outcome",
+      description: "Estimate the withdrawal amount during retirement.",
+      label: "Phase 3 payout",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {cards.map((card) => (
+        <CalculationPhaseCard
+          key={card.phase}
+          phase={card.phase}
+          title={card.title}
+          description={card.description}
+          label={card.label}
+          plan={plan}
+          submitted={submittedPhases.has(card.phase)}
+          submitting={submittingPhase === card.phase}
+          onSubmit={onSubmitPhase}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CalculationPhaseCard({
+  phase,
+  title,
+  description,
+  label,
+  plan,
+  submitted,
+  submitting,
+  onSubmit,
+}: {
+  phase: number;
+  title: string;
+  description: string;
+  label: string;
+  plan: LifePlan;
+  submitted: boolean;
+  submitting: boolean;
+  onSubmit: (phase: number, value: number) => Promise<"high" | "low" | "correct" | null>;
 }) {
   const [guess, setGuess] = useState<string>("");
   const [feedback, setFeedback] = useState<"high" | "low" | "correct" | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const trueAnswer = useMemo(() => correct, [correct]);
 
-  // Hint: also show the user how it would compute (without showing the answer)
-  const verifyOwn = computePlan(plan); // sanity for dev
+  const target =
+    phase === 10
+      ? computePhase1(plan)
+      : phase === 11
+        ? computePhase2(plan)
+        : computePhase3(plan);
 
-  const submit = async (e: React.FormEvent) => {
+  const isLocked = feedback === "correct";
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!roomId) return;
-    const v = Number(guess);
-    if (!Number.isFinite(v)) return toast.error("Enter a number");
-    setBusy(true);
-    const result = checkAnswer(v, trueAnswer);
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
+    const value = Number(guess);
+    if (!Number.isFinite(value)) return toast.error("Enter a number");
+    const result = await onSubmit(phase, value);
+    if (!result) return;
+    setAttempts((count) => count + 1);
     setFeedback(result);
-
-    // Upsert final_submissions
-    const { error } = await supabase.from("final_submissions").upsert(
-      {
-        participant_id: participantId,
-        room_id: roomId,
-        user_value: v,
-        is_correct: result === "correct",
-        attempts: newAttempts,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "participant_id" },
-    );
-    setBusy(false);
-    if (error) toast.error("Could not submit");
+    if (result !== "correct") {
+      setGuess("");
+    }
   };
 
   return (
-    <Card className="p-8">
-      <h2 className="text-xl font-semibold">Compute the final balance at age 80</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Use compound interest across all three phases of your shuffled life. Within 0.1% counts as
-        correct.
-      </p>
+    <Card className="p-6">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        {process.env.NODE_ENV === "development" && (
+          <p className="mt-2 text-xs font-mono text-muted-foreground">
+            dev: target = {formatCurrency(target)}
+          </p>
+        )}
+      </div>
 
-      <details className="mt-4 rounded-lg bg-muted/50 p-3 text-sm">
-        <summary className="cursor-pointer font-medium">Formula reminder</summary>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>Phase 1: monthly contributions for 25 years compounding at the early-career rate</li>
-          <li>
-            Phase 2: that lump sum holds for 15 years (+ optional extra contributions) at the hold
-            rate
-          </li>
-          <li>
-            Phase 3: withdraw monthly for 15 years while remaining balance still earns the
-            retirement rate
-          </li>
-        </ul>
-      </details>
-
-      <form onSubmit={submit} className="mt-6 space-y-3">
-        <Label htmlFor="g">Your final balance ($)</Label>
+      <form onSubmit={submit} className="space-y-3">
+        <Label htmlFor={`guess-${phase}`}>{label} ($)</Label>
         <Input
-          id="g"
+          id={`guess-${phase}`}
           type="number"
           step="0.01"
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
           className="h-12 text-lg"
           required
-          disabled={feedback === "correct"}
+          disabled={isLocked || submitting}
         />
         <Button
           type="submit"
-          variant={feedback === "correct" ? "success" : "hero"}
+          variant={isLocked ? "success" : "hero"}
           size="lg"
           className="w-full"
-          disabled={busy || feedback === "correct"}
+          disabled={isLocked || submitting}
         >
-          {feedback === "correct" ? "✓ Locked in" : busy ? "Checking…" : "Check answer"}
+          {isLocked ? "✓ Submitted" : submitting ? "Submitting…" : "Submit guess"}
         </Button>
       </form>
 
@@ -474,20 +557,14 @@ function CalculationCard({
           }`}
         >
           {feedback === "correct"
-            ? `🎯 Correct! ${formatCurrency(trueAnswer)}`
+            ? "🎯 Correct"
             : feedback === "high"
-              ? "📈 Too high — try lower"
-              : "📉 Too low — try higher"}
+              ? "📈 Too high - try lower"
+              : "📉 Too low - try higher"}
           <div className="mt-1 text-xs opacity-70">Attempt #{attempts}</div>
         </div>
-      )}
-
-      {/* Hidden in production: show plan pre-calc check; harmless for now */}
-      {import.meta.env.DEV && (
-        <p className="mt-6 text-xs text-muted-foreground">
-          dev-only target: {formatCurrency(verifyOwn)}
-        </p>
       )}
     </Card>
   );
 }
+

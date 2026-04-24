@@ -11,7 +11,7 @@ import {
   fieldsForPhase,
   inputPhaseForLabel,
   buildAssignments,
-  computePlan,
+  computePhase3,
   formatCurrency,
   type LifePlan,
   type ParticipantAnswers,
@@ -163,12 +163,13 @@ function TeacherDashboard() {
         participant_id: a.participantId,
         room_id: roomId,
         assigned_plan: a.plan,
-        correct_value: computePlan(a.plan),
+        correct_value: computePhase3(a.plan),
       }));
       // Wipe & insert (in case re-shuffled)
-      await supabase.from("assignments").delete().eq("room_id", roomId);
-      const { error } = await supabase.from("assignments").insert(rows);
-      if (error) throw error;
+      const { error: deleteError } = await supabase.from("assignments").delete().eq("room_id", roomId);
+      if (deleteError) throw deleteError;
+      const { error: insertError } = await supabase.from("assignments").insert(rows);
+      if (insertError) throw insertError;
       await advance(PHASES.ASSIGNMENT);
       toast.success("Life plans shuffled and distributed!");
     } catch (e) {
@@ -223,7 +224,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.PHASE_1)}
           disabled={working || students.length === 0}
         >
-          Start simulation →
+          Start Simulation →
         </Button>
       );
     }
@@ -235,7 +236,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.PHASE_1_RESULTS)}
           disabled={working}
         >
-          Show class results
+          Show Class Results
         </Button>
       );
     }
@@ -254,7 +255,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.PHASE_2_RESULTS)}
           disabled={working}
         >
-          Show class results
+          Show Class Results
         </Button>
       );
     }
@@ -273,7 +274,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.PHASE_3_RESULTS)}
           disabled={working}
         >
-          Show class results
+          Show Class Results
         </Button>
       );
     }
@@ -304,7 +305,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.FINISHED)}
           disabled={working}
         >
-          Finish & reveal class
+          Finish & Reveal class
         </Button>
       );
     }
@@ -402,11 +403,11 @@ function TeacherDashboard() {
           )}
 
           {phase === PHASES.CALCULATION && (
-            <CalculationLeaderboard roomId={roomId} students={students} />
+            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} />
           )}
 
           {phase === PHASES.FINISHED && (
-            <CalculationLeaderboard roomId={roomId} students={students} reveal />
+            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} reveal />
           )}
         </section>
 
@@ -439,10 +440,12 @@ function TeacherDashboard() {
 function CalculationLeaderboard({
   roomId,
   students,
+  responses,
   reveal,
 }: {
   roomId: string | null;
   students: Participant[];
+  responses: ResponseRow[];
   reveal?: boolean;
 }) {
   const [subs, setSubs] = useState<
@@ -489,34 +492,47 @@ function CalculationLeaderboard({
       <h2 className="mb-4 text-lg font-semibold">
         {reveal ? "Final results" : "Live calculation progress"}
       </h2>
-      <ul className="space-y-2">
+      <ul className="space-y-4">
         {students.map((s) => {
           const sub = subs.find((x) => x.participant_id === s.id);
           const a = assignments.find((x) => x.participant_id === s.id);
+          const progressCount = responses.filter(
+            (r) => r.participant_id === s.id && [10, 11, 12].includes(r.phase),
+          ).length;
           return (
-            <li key={s.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-              <div>
-                <div className="font-medium">{s.name}</div>
-                {sub && (
-                  <div className="text-xs text-muted-foreground">
-                    {sub.attempts} attempt{sub.attempts === 1 ? "" : "s"}
-                    {reveal && a && ` · target ${formatCurrency(a.correct_value)}`}
+            <li key={s.id} className="rounded-lg bg-muted/50 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="font-medium">{s.name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {progressCount} / 3 guesses submitted
                   </div>
-                )}
+                </div>
+                <div className="text-right">
+                  {sub?.is_correct ? (
+                    <span className="rounded-full bg-success/15 px-3 py-1 text-xs font-semibold [color:oklch(0.4_0.12_145)]">
+                      ✓ correct
+                    </span>
+                  ) : sub ? (
+                    <span className="text-sm text-muted-foreground">
+                      {formatCurrency(sub.user_value)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">…working</span>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                {sub?.is_correct ? (
-                  <span className="rounded-full bg-success/15 px-3 py-1 text-xs font-semibold [color:oklch(0.4_0.12_145)]">
-                    ✓ correct
-                  </span>
-                ) : sub ? (
-                  <span className="text-sm text-muted-foreground">
-                    {formatCurrency(sub.user_value)}
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">…working</span>
-                )}
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-[image:var(--gradient-success)]"
+                  style={{ width: `${(progressCount / 3) * 100}%` }}
+                />
               </div>
+              {reveal && a && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  target {formatCurrency(a.correct_value)}
+                </div>
+              )}
             </li>
           );
         })}

@@ -12,17 +12,17 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Classroom Life Simulation — Live, Multiplayer Learning" },
+      { title: "Game of Life Simulation - are you doomed" },
       {
         name: "description",
         content:
-          "A real-time classroom game where students plan their financial life across three phases and discover where the choices of their peers would lead them.",
+          "La Vaca Saturno Saturnita is said to be the oldest entity in the Brainrot universe, existing since the formation of the solar system billions of years ago. It remains neutral in most conflicts, intervening only when the balance of the universe is threatened. Some theorize it's actually a fragment of the cosmic entity that created the universe itself.",
       },
-      { property: "og:title", content: "Classroom Life Simulation" },
+      { property: "og:title", content: "Game of Life Simulation" },
       {
         property: "og:description",
         content:
-          "Host a room, students join with a code, and compute your shuffled life plan together.",
+          "Host a room, join with a code, and compute your shuffled life plan.",
       },
     ],
   }),
@@ -119,15 +119,14 @@ function HomePage() {
         <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-card px-4 py-1.5 shadow-[var(--shadow-soft)] ring-1 ring-border">
           <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Live classroom · realtime
+            Live · Realtime
           </span>
         </div>
         <h1 className="bg-[image:var(--gradient-hero)] bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
           Life Simulation
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Plan three phases of a financial life — early career, mid-life hold, retirement — then
-          compute the outcome of a randomly shuffled destiny.
+          Plan three phases of a financial life: investing, holding, retirement
         </p>
       </header>
 
@@ -193,7 +192,7 @@ function HomePage() {
                 id="name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="jimmy jon"
+                placeholder="tanka jahari"
                 className="h-11"
               />
             </div>
@@ -211,7 +210,7 @@ function HomePage() {
       </div>
 
       <footer className="text-center text-xs text-muted-foreground">
-        Built for live classroom use · responses sync in realtime
+        Built for  triple T · herro 
       </footer>
     </main>
   );
