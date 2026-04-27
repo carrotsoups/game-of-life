@@ -45,6 +45,7 @@ function StudentRoom() {
   const [joining, setJoining] = useState(false);
   const [submittedPhases, setSubmittedPhases] = useState<Set<number>>(new Set());
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Bootstrap room
   useEffect(() => {
@@ -75,6 +76,7 @@ function StudentRoom() {
             correct_value: a.correct_value ?? 0,
           });
       }
+      if (!cancelled) setIsLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -195,6 +197,19 @@ function StudentRoom() {
     setSubmittedPhases((s) => new Set(s).add(inputP));
     toast.success("Submitted!");
   };
+
+  // Show loading state initially to prevent hydration mismatch
+  if (isLoading) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 py-12">
+        <Card className="w-full p-8 shadow-[var(--shadow-elegant)]">
+          <div className="mx-auto mb-4 h-12 w-12 animate-pulse-glow rounded-full bg-[image:var(--gradient-hero)]" />
+          <h1 className="text-2xl font-bold">Loading room...</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Please wait while we set up your session</p>
+        </Card>
+      </main>
+    );
+  }
 
   // Not joined yet → mini join form
   if (!participantId) {
@@ -391,7 +406,7 @@ function StudentBody({
   return (
     <Card className="p-8 text-center">
       <p className="text-sm text-muted-foreground">
-        Hang tight — your teacher is moving things along.
+        Hang tight -- your teacher is moving things along.
       </p>
     </Card>
   );

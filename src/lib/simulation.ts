@@ -325,8 +325,8 @@ export function buildAssignments(
   };
 
   const defaultPhase1: LifePlan["phase1"] = {
-    occupation: "—",
-    city: "—",
+    occupation: "--",
+    city: "--",
     A: 18,
     B: 40,
     amount: 0,
@@ -334,13 +334,13 @@ export function buildAssignments(
     rate: 0,
   };
   const defaultPhase2: LifePlan["phase2"] = {
-    vehicle: "—",
+    vehicle: "--",
     C: 60,
     rate: 0,
   };
   const defaultPhase3: LifePlan["phase3"] = {
-    location: "—",
-    occupation: "—",
+    location: "--",
+    occupation: "--",
     rate: 0,
     freq: "year",
     withdraw: 0,

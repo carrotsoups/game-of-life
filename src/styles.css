@@ -75,7 +75,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.04 270);
 
-  /* Primary: vivid teal — chalkboard meets neon */
+  /* Primary: vivid teal -- chalkboard meets neon */
   --primary: oklch(0.62 0.16 195);
   --primary-foreground: oklch(0.99 0 0);
   --primary-glow: oklch(0.78 0.14 185);

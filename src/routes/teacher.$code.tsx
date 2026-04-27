@@ -54,6 +54,32 @@ function TeacherDashboard() {
   }[]>([]);
   const [working, setWorking] = useState(false);
 
+  const kickStudent = async (participantId: string, name: string) => {
+    if (!roomId) return;
+    setWorking(true);
+
+    // Remove participant and all their data
+    const { error: participantError } = await supabase
+      .from("participants")
+      .delete()
+      .eq("id", participantId);
+
+    if (participantError) {
+      setWorking(false);
+      toast.error("Could not remove student");
+      return;
+    }
+
+    // Clean up responses and assignments
+    await Promise.all([
+      supabase.from("responses").delete().eq("participant_id", participantId),
+      supabase.from("assignments").delete().eq("participant_id", participantId),
+    ]);
+
+    setWorking(false);
+    toast.success(`Removed ${name} from the room`);
+  };
+
   // Initial fetch + realtime subscriptions
   useEffect(() => {
     let cancelled = false;
@@ -506,13 +532,29 @@ function TeacherDashboard() {
         <aside>
           <Card className="p-6">
             <h2 className="mb-3 text-lg font-semibold">Participants</h2>
+            {phase === PHASES.LOBBY && participants.some(p => p.role === "student") && (
+              <p className="mb-3 text-xs text-muted-foreground">
+                Click student names to remove them from the room
+              </p>
+            )}
             <ul className="space-y-2">
               {participants.map((p) => (
                 <li key={p.id} className="flex items-center gap-2 text-sm">
                   <span
                     className={`h-2 w-2 rounded-full ${p.role === "teacher" ? "bg-accent" : "bg-success"}`}
                   />
-                  <span className="font-medium">{p.name}</span>
+                  {p.role === "student" && phase === PHASES.LOBBY ? (
+                    <button
+                      onClick={() => kickStudent(p.id, p.name)}
+                      disabled={working}
+                      className="font-medium text-destructive hover:text-destructive/80 hover:underline disabled:opacity-50"
+                      title={`Click to remove ${p.name} from the room`}
+                    >
+                      {p.name}
+                    </button>
+                  ) : (
+                    <span className="font-medium">{p.name}</span>
+                  )}
                   {p.role === "teacher" && (
                     <span className="ml-auto text-xs uppercase text-muted-foreground">teacher</span>
                   )}
