@@ -53,6 +53,7 @@ function TeacherDashboard() {
     correct_value: number | null;
   }[]>([]);
   const [working, setWorking] = useState(false);
+  const [devMode, setDevMode] = useState(false);
 
   const kickStudent = async (participantId: string, name: string) => {
     if (!roomId) return;
@@ -444,6 +445,13 @@ function TeacherDashboard() {
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Room code</span>
             <div className="font-mono text-2xl font-bold tracking-[0.3em]">{code}</div>
           </div>
+          <Button
+            variant={devMode ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => setDevMode(!devMode)}
+          >
+            {devMode ? "🔓 Dev Mode ON" : "🔒 Dev Mode OFF"}
+          </Button>
         </div>
       </div>
 
@@ -521,11 +529,11 @@ function TeacherDashboard() {
           )}
 
           {phase === PHASES.CALCULATION && (
-            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} />
+            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} devMode={devMode} />
           )}
 
           {phase === PHASES.FINISHED && (
-            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} reveal />
+            <CalculationLeaderboard roomId={roomId} students={students} responses={responses} reveal devMode={devMode} />
           )}
         </section>
 
@@ -576,11 +584,13 @@ function CalculationLeaderboard({
   students,
   responses,
   reveal,
+  devMode,
 }: {
   roomId: string | null;
   students: Participant[];
   responses: ResponseRow[];
   reveal?: boolean;
+  devMode?: boolean;
 }) {
   const [subs, setSubs] = useState<
     { participant_id: string; user_value: number; is_correct: boolean; attempts: number }[]
@@ -683,6 +693,13 @@ function CalculationLeaderboard({
               {reveal && a && a.correct_value !== null && (
                 <div className="mt-2 text-xs text-muted-foreground">
                   target {formatCurrency(a.correct_value)}
+                </div>
+              )}
+              {devMode && !reveal && a && typeof a.assigned_plan === "object" && a.assigned_plan !== null && (
+                <div className="mt-2 space-y-1 text-xs text-orange-600 dark:text-orange-400">
+                  <div>Phase 1: {formatCurrency(computePhase1(a.assigned_plan as LifePlan))}</div>
+                  <div>Phase 2: {formatCurrency(computePhase2(a.assigned_plan as LifePlan))}</div>
+                  <div>Phase 3: {formatCurrency(computePhase3(a.assigned_plan as LifePlan))}</div>
                 </div>
               )}
             </li>
