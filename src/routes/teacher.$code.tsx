@@ -393,9 +393,11 @@ function TeacherDashboard() {
       );
     }
     return (
-      <Button variant="outline" size="lg" onClick={() => advance(PHASES.LOBBY)} disabled={working}>
-        ↺ Reset to lobby
-      </Button>
+      <Link to="/">
+        <Button variant="outline" size="lg">
+          ← Back to home
+        </Button>
+      </Link>
     );
   };
 
