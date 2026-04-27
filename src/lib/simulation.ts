@@ -205,9 +205,6 @@ export interface LifePlan {
   phase3: { location: string; occupation: string; rate: number; freq: string; withdraw: number, D: number };
 }
 
-const YEARS_P1 = 25;
-const YEARS_P2 = 15;
-const YEARS_P3 = 15;
 
 function futureValue(amount: number, interestRate: number, years: number, freqS: string, ): number {
   const freqMap: Record<string, number> = {
@@ -237,7 +234,7 @@ function fvLump(principal: number, interestRate: number, years: number, freqS: s
   const freq = freqMap[freqS];
   const i = interestRate / 100.0 / freq;
   const n = years * freq;
-  if (i === 0) return principal * n;
+  if (i === 0) return principal;
   return principal * Math.pow(1 + i, n);
 }
 
@@ -263,7 +260,7 @@ export function computePhase1(plan: LifePlan): number {
 }
 
 export function computePhase2(plan: LifePlan): number {
-  const balance = futureValue(plan.phase1.amount, plan.phase1.rate, plan.phase1.B - plan.phase1.A, plan.phase1.freq);
+  const balance = computePhase1(plan);
   const balance2 = fvLump(balance, plan.phase2.rate, plan.phase2.C-plan.phase1.B, "year");
   return balance2;
 }
