@@ -344,13 +344,43 @@ function StudentBody({
   }
 
   if (phase === PHASES.FINISHED && assignment) {
+    const phase1Result = computePhase1(assignment.assigned_plan);
+    const phase2Result = computePhase2(assignment.assigned_plan);
+    const phase3Result = computePhase3(assignment.assigned_plan);
+
     return (
-      <Card className="p-8 text-center">
-        <h2 className="text-2xl font-bold">🎉 Class finished!</h2>
-        <p className="mt-2 text-muted-foreground">Your assigned plan ended at:</p>
-        <p className="mt-3 bg-[image:var(--gradient-hero)] bg-clip-text text-4xl font-bold text-transparent">
-          {formatCurrency(assignment.correct_value)}
-        </p>
+      <Card className="p-8">
+        <h2 className="text-center text-2xl font-bold">🎉 Class finished!</h2>
+        <p className="mt-2 text-center text-muted-foreground">Your assigned plan results:</p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Phase 1
+            </h3>
+            <p className="bg-[image:var(--gradient-hero)] bg-clip-text text-2xl font-bold text-transparent">
+              {formatCurrency(phase1Result)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Early career</p>
+          </div>
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Phase 2
+            </h3>
+            <p className="bg-[image:var(--gradient-hero)] bg-clip-text text-2xl font-bold text-transparent">
+              {formatCurrency(phase2Result)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Hold</p>
+          </div>
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Phase 3
+            </h3>
+            <p className="bg-[image:var(--gradient-hero)] bg-clip-text text-2xl font-bold text-transparent">
+              {formatCurrency(phase3Result)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Retirement</p>
+          </div>
+        </div>
       </Card>
     );
   }
