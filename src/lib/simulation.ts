@@ -95,7 +95,7 @@ export const PHASE_1_FIELDS: FieldDef[] = [
     key: "freq",
     label: "per...",
     type: "select",
-    options: ["monthly", "annually", "semiannually", "weekly", "biweekly", "quarterly"],
+    options: ["month", "year", "semiannual", "week", "biweek", "quarter"],
   },
   {
     key: "rate",
@@ -161,7 +161,7 @@ export const PHASE_3_FIELDS: FieldDef[] = [
     key: "freq",
     label: "compounded per...",
     type: "select",
-    options: ["monthly", "annually", "semiannually", "weekly", "biweekly", "quarterly"],
+    options: ["month", "year", "semiannual", "week", "biweek", "quarter"],
   },
   {
     key: "withdraw",
@@ -194,7 +194,7 @@ export function inputPhaseForLabel(p: number): 1 | 3 | 5 | null {
 }
 
 // === Calculation ===
-// Phase 1: monthly contributions for 25 years (25→50) growing at rate1
+// Phase 1: month contributions for 25 years (25→50) growing at rate1
 // Phase 2: hold for 15 years (50→65) growing at rate2 + optional extra contributions
 // Phase 3: 15 years of withdrawals (65→80) on remaining balance growing at rate3
 // Returns the remaining nest egg at age 80 (could be negative if over-withdrawn).
@@ -211,12 +211,12 @@ const YEARS_P3 = 15;
 
 function futureValue(amount: number, interestRate: number, years: number, freqS: string, ): number {
   const freqMap: Record<string, number> = {
-    monthly: 12,
-    annually: 1,
-    semiannually: 2,
-    weekly: 52,
-    biweekly: 26,
-    quarterly: 4,
+    month: 12,
+    year: 1,
+    semiannual: 2,
+    week: 52,
+    biweek: 26,
+    quarter: 4,
   };
   const freq = freqMap[freqS];
   const i = interestRate / 100 / freq;
@@ -227,12 +227,12 @@ function futureValue(amount: number, interestRate: number, years: number, freqS:
 
 function fvLump(principal: number, interestRate: number, years: number, freqS: string): number {
   const freqMap: Record<string, number> = {
-    monthly: 12,
-    annually: 1,
-    semiannually: 2,
-    weekly: 52,
-    biweekly: 26,
-    quarterly: 4,
+    month: 12,
+    year: 1,
+    semiannual: 2,
+    week: 52,
+    biweek: 26,
+    quarter: 4,
   };
   const freq = freqMap[freqS];
   const i = interestRate / 100 / freq;
@@ -243,12 +243,12 @@ function fvLump(principal: number, interestRate: number, years: number, freqS: s
 
 function payout(presentvalue: number, interestRate: number, years: number, freqS: string): number {
   const freqMap: Record<string, number> = {
-    monthly: 12,
-    annually: 1,
-    semiannually: 2,
-    weekly: 52,
-    biweekly: 26,
-    quarterly: 4,
+    month: 12,
+    year: 1,
+    semiannual: 2,
+    week: 52,
+    biweek: 26,
+    quarter: 4,
   };
   const freq = freqMap[freqS];
   const i = interestRate / 100 / freq;
@@ -264,7 +264,7 @@ export function computePhase1(plan: LifePlan): number {
 
 export function computePhase2(plan: LifePlan): number {
   const balance = futureValue(plan.phase1.amount, plan.phase1.rate, plan.phase1.B - plan.phase1.A, plan.phase1.freq);
-  const balance2 = fvLump(balance, plan.phase2.rate, plan.phase2.C-plan.phase1.B, "annually");
+  const balance2 = fvLump(balance, plan.phase2.rate, plan.phase2.C-plan.phase1.B, "year");
   return balance2;
 }
 
@@ -330,7 +330,7 @@ export function buildAssignments(
     A: 18,
     B: 40,
     amount: 0,
-    freq: "annually",
+    freq: "year",
     rate: 0,
   };
   const defaultPhase2: LifePlan["phase2"] = {
@@ -342,7 +342,7 @@ export function buildAssignments(
     location: "—",
     occupation: "—",
     rate: 0,
-    freq: "annually",
+    freq: "year",
     withdraw: 0,
     D: 80,
   };
@@ -373,4 +373,29 @@ export function formatCurrency(n: number): string {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+export function makeLifePlanWordProblem(plan: LifePlan): string {
+  return [
+    "Life Plan Word Problem:\n",
+    "Phase 1 - Early Career:\n",
+    `You are a ${plan.phase1.occupation} living in ${plan.phase1.city}.`,
+    `From age ${plan.phase1.A} to ${plan.phase1.B}, you invest ${formatCurrency(plan.phase1.amount)} per ${plan.phase1.freq} at ${plan.phase1.rate}% compound interest.`,
+    "\n",
+    "Phase 2 - Hold Period:\n",
+    `After phase 1, you hold your savings in ${plan.phase2.vehicle}.`,
+    `You keep the money from age ${plan.phase1.B} to ${plan.phase2.C} at ${plan.phase2.rate}% compound interest.`,
+    "\n",
+    "Phase 3 - Retirement:\n",
+    `You retire to ${plan.phase3.location} and work as a part-time ${plan.phase3.occupation}.`,
+    `During retirement, your remaining savings grow at ${plan.phase3.rate}% compounded ${plan.phase3.freq}.`,
+    `You fully withdraw your savings by age ${plan.phase3.D}.`,
+    "\n",
+    "Questions:\n",
+    `1. What is your balance at age ${plan.phase1.B} after the early career investment period?`,
+    `2. What is your balance at age ${plan.phase2.C} after the hold period?`,
+    `3. What is your periodic payout amount during retirement under the withdrawal schedule?`,
+    "\n",
+    "Write your answers as numbers or calculations based on the three phases above.",
+  ].join("\n");
 }

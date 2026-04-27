@@ -39,7 +39,7 @@ export function PhaseForm({ fields, initial, submitting, submitted, onSubmit }: 
       {fields.map((f) => {
         const label = f.label
           .replace("<<B>>", String(initial?.B ?? "B"))
-          .replace("<<phase3freq>>", String(values["freq"] || "frequency"));
+          .replace("<<phase3freq>>", String(values["freq"] || "<frequency>"));
         return (
           <div key={f.key} className="space-y-2">
             {f.type === "display" ? (

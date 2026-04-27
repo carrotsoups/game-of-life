@@ -11,8 +11,12 @@ import {
   fieldsForPhase,
   inputPhaseForLabel,
   buildAssignments,
+  computePhase1,
+  computePhase2,
   computePhase3,
+  checkAnswer,
   formatCurrency,
+  makeLifePlanWordProblem,
   type LifePlan,
   type ParticipantAnswers,
 } from "@/lib/simulation";
@@ -43,6 +47,11 @@ function TeacherDashboard() {
   const [phase, setPhase] = useState<number>(0);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [responses, setResponses] = useState<ResponseRow[]>([]);
+  const [assignments, setAssignments] = useState<{
+    participant_id: string;
+    assigned_plan: unknown;
+    correct_value: number | null;
+  }[]>([]);
   const [working, setWorking] = useState(false);
 
   // Initial fetch + realtime subscriptions
@@ -62,13 +71,22 @@ function TeacherDashboard() {
       setRoomId(room.id);
       setPhase(room.phase);
 
-      const [{ data: pData }, { data: rData }] = await Promise.all([
+      const [{ data: pData }, { data: rData }, { data: aData }] = await Promise.all([
         supabase.from("participants").select("id, name, role").eq("room_id", room.id),
         supabase.from("responses").select("participant_id, phase, answer").eq("room_id", room.id),
+        supabase
+          .from("assignments")
+          .select("participant_id, assigned_plan, correct_value")
+          .eq("room_id", room.id),
       ]);
       if (cancelled) return;
       setParticipants((pData ?? []) as Participant[]);
       setResponses((rData ?? []) as ResponseRow[]);
+      setAssignments((aData ?? []) as {
+        participant_id: string;
+        assigned_plan: unknown;
+        correct_value: number | null;
+      }[]);
     })();
     return () => {
       cancelled = true;
@@ -109,6 +127,21 @@ function TeacherDashboard() {
           setResponses((data ?? []) as ResponseRow[]);
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assignments", filter: `room_id=eq.${roomId}` },
+        async () => {
+          const { data } = await supabase
+            .from("assignments")
+            .select("participant_id, assigned_plan, correct_value")
+            .eq("room_id", roomId);
+          setAssignments((data ?? []) as {
+            participant_id: string;
+            assigned_plan: unknown;
+            correct_value: number | null;
+          }[]);
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -116,6 +149,33 @@ function TeacherDashboard() {
   }, [roomId]);
 
   const students = useMemo(() => participants.filter((p) => p.role === "student"), [participants]);
+
+  const downloadAllLifeCards = () => {
+    if (assignments.length === 0) return;
+    const chunks = assignments.map((assignmentRow, index) => {
+      const student = participants.find((p) => p.id === assignmentRow.participant_id);
+      return [
+        `Student: ${student?.name ?? assignmentRow.participant_id}`,
+        "----------------------------------------",
+        makeLifePlanWordProblem(assignmentRow.assigned_plan as LifePlan),
+      ].join("\n");
+    });
+    const text = [
+      `Life cards for room ${code}`,
+      "",
+      chunks.join("\n\n"),
+    ].join("\n");
+
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "life-cards.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const advance = async (toPhase: number) => {
     if (!roomId) return;
@@ -373,7 +433,14 @@ function TeacherDashboard() {
                 {students.length} student{students.length === 1 ? "" : "s"}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3">{renderControls()}</div>
+            <div className="flex flex-wrap items-center gap-3">
+              {renderControls()}
+              {assignments.length > 0 && phase >= PHASES.ASSIGNMENT && (
+                <Button variant="outline" size="lg" onClick={downloadAllLifeCards} disabled={working}>
+                  Download all life cards
+                </Button>
+              )}
+            </div>
           </Card>
 
           {inputP && (
@@ -475,7 +542,7 @@ function CalculationLeaderboard({
     { participant_id: string; user_value: number; is_correct: boolean; attempts: number }[]
   >([]);
   const [assignments, setAssignments] = useState<
-    { participant_id: string; correct_value: number }[]
+    { participant_id: string; assigned_plan: unknown; correct_value: number | null }[]
   >([]);
 
   useEffect(() => {
@@ -486,7 +553,10 @@ function CalculationLeaderboard({
           .from("final_submissions")
           .select("participant_id, user_value, is_correct, attempts")
           .eq("room_id", roomId),
-        supabase.from("assignments").select("participant_id, correct_value").eq("room_id", roomId),
+        supabase
+          .from("assignments")
+          .select("participant_id, assigned_plan, correct_value")
+          .eq("room_id", roomId),
       ]);
       setSubs((s ?? []) as typeof subs);
       setAssignments((a ?? []) as typeof assignments);
@@ -510,6 +580,12 @@ function CalculationLeaderboard({
     };
   }, [roomId]);
 
+  const getTarget = (plan: LifePlan, phase: number) => {
+    if (phase === 10) return computePhase1(plan);
+    if (phase === 11) return computePhase2(plan);
+    return computePhase3(plan);
+  };
+
   return (
     <Card className="p-6">
       <h2 className="mb-4 text-lg font-semibold">
@@ -519,16 +595,25 @@ function CalculationLeaderboard({
         {students.map((s) => {
           const sub = subs.find((x) => x.participant_id === s.id);
           const a = assignments.find((x) => x.participant_id === s.id);
-          const progressCount = responses.filter(
-            (r) => r.participant_id === s.id && [10, 11, 12].includes(r.phase),
-          ).length;
+          const progressCount = new Set(
+            responses
+              .filter((r) => r.participant_id === s.id && [10, 11, 12].includes(r.phase))
+              .filter((r) => {
+                if (!a || typeof a.assigned_plan !== "object" || a.assigned_plan === null) return false;
+                const plan = a.assigned_plan as LifePlan;
+                const value = Number((r.answer as Record<string, unknown>).value);
+                if (!Number.isFinite(value)) return false;
+                return checkAnswer(value, getTarget(plan, r.phase)) === "correct";
+              })
+              .map((r) => r.phase),
+          ).size;
           return (
             <li key={s.id} className="rounded-lg bg-muted/50 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="font-medium">{s.name}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {progressCount} / 3 guesses submitted
+                    {progressCount} / 3 correct guesses
                   </div>
                 </div>
                 <div className="text-right">
@@ -551,7 +636,7 @@ function CalculationLeaderboard({
                   style={{ width: `${(progressCount / 3) * 100}%` }}
                 />
               </div>
-              {reveal && a && (
+              {reveal && a && a.correct_value !== null && (
                 <div className="mt-2 text-xs text-muted-foreground">
                   target {formatCurrency(a.correct_value)}
                 </div>

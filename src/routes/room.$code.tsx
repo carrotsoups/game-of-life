@@ -17,6 +17,7 @@ import {
   computePhase3,
   checkAnswer,
   formatCurrency,
+  makeLifePlanWordProblem,
   type LifePlan,
 } from "@/lib/simulation";
 import { getRoomSession, setRoomSession } from "@/lib/session";
@@ -157,7 +158,9 @@ function StudentRoom() {
       return null;
     }
 
-    setSubmittedPhases((s) => new Set(s).add(phase));
+    if (result === "correct") {
+      setSubmittedPhases((s) => new Set(s).add(phase));
+    }
     return result;
   };
 
@@ -373,7 +376,7 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
       </div>
       <div className="grid gap-4 p-6 sm:grid-cols-3">
         <Section
-          title="Early career (18→50)"
+          title="Early career"
           rows={[
             ["Invest", `$${plan.phase1.amount} ${plan.phase1.freq}`],
             ["From → to", `${plan.phase1.A} → ${plan.phase1.B}`],
@@ -381,7 +384,7 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           ]}
         />
         <Section
-          title="Hold (50→65)"
+          title="Hold"
           rows={[
             ["Vehicle", plan.phase2.vehicle],
             ["Until age", `${plan.phase2.C}`],
@@ -389,7 +392,7 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           ]}
         />
         <Section
-          title="Retirement (65→80)"
+          title="Retirement"
           rows={[
             ["Location", plan.phase3.location],
             ["Work as", plan.phase3.occupation],
@@ -454,8 +457,26 @@ function CalculationStage({
     },
   ];
 
+  const downloadWordProblem = () => {
+    const text = makeLifePlanWordProblem(plan);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "life-plan-word-problem.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <Button variant="outline" size="sm" onClick={downloadWordProblem}>
+          Download word problem
+        </Button>
+      </div>
       {cards.map((card) => (
         <CalculationPhaseCard
           key={card.phase}
