@@ -334,12 +334,15 @@ function StudentBody({
       );
     }
     return (
-      <CalculationStage
-        plan={assignment.assigned_plan}
-        submittedPhases={submittedPhases}
-        submittingPhase={calcSubmittingPhase}
-        onSubmitPhase={handleSubmitCalculationPhase}
-      />
+      <div className="space-y-6">
+        <AssignmentCard plan={assignment.assigned_plan} />
+        <CalculationStage
+          plan={assignment.assigned_plan}
+          submittedPhases={submittedPhases}
+          submittingPhase={calcSubmittingPhase}
+          onSubmitPhase={handleSubmitCalculationPhase}
+        />
+      </div>
     );
   }
 
@@ -408,8 +411,11 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
         <Section
           title="Early career"
           rows={[
-            ["Invest", `$${plan.phase1.amount} ${plan.phase1.freq}`],
-            ["From → to", `${plan.phase1.A} → ${plan.phase1.B}`],
+            ["Occupation", plan.phase1.occupation],
+            ["City", plan.phase1.city],
+            ["Invest", `$${plan.phase1.amount}/${plan.phase1.freq}`],
+            ["From age", `${plan.phase1.A}`],
+            ["To age", `${plan.phase1.B}`],
             ["Return", `${plan.phase1.rate}%/yr`],
           ]}
         />
@@ -426,7 +432,9 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           rows={[
             ["Location", plan.phase3.location],
             ["Work as", plan.phase3.occupation],
+            ["Withdraw", `$${plan.phase3.withdraw}/${plan.phase3.freq}`],
             ["Withdraw age", `${plan.phase3.D}`],
+            ["Return", `${plan.phase3.rate}%/yr`],
           ]}
         />
       </div>
