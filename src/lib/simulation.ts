@@ -219,7 +219,7 @@ function futureValue(amount: number, interestRate: number, years: number, freqS:
     quarter: 4,
   };
   const freq = freqMap[freqS];
-  const i = interestRate / 100 / freq;
+  const i = interestRate / 100.0 / freq;
   const n = years * freq;
   if (i === 0) return amount * n;
   return amount * ((Math.pow(1 + i, n) - 1) / i);
@@ -235,7 +235,7 @@ function fvLump(principal: number, interestRate: number, years: number, freqS: s
     quarter: 4,
   };
   const freq = freqMap[freqS];
-  const i = interestRate / 100 / freq;
+  const i = interestRate / 100.0 / freq;
   const n = years * freq;
   if (i === 0) return principal * n;
   return principal * Math.pow(1 + i, n);
@@ -251,7 +251,7 @@ function payout(presentvalue: number, interestRate: number, years: number, freqS
     quarter: 4,
   };
   const freq = freqMap[freqS];
-  const i = interestRate / 100 / freq;
+  const i = interestRate / 100.0 / freq;
   const n = years * freq;
   if (i === 0) return presentvalue / n;
   return presentvalue * i / (1 - Math.pow(1 + i, -n));
