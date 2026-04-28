@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/room/$code")({
   head: ({ params }) => ({
-    meta: [{ title: `Room ${params.code} · Classroom Life Simulation` }],
+    meta: [{ title: `Room ${params.code} · Classroom Life` }],
   }),
   component: StudentRoom,
 });

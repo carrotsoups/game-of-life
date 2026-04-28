@@ -12,13 +12,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Game of Life Simulation - are you doomed" },
+      { title: "Game of Life" },
       {
         name: "description",
         content:
           "La Vaca Saturno Saturnita is said to be the oldest entity in the Brainrot universe, existing since the formation of the solar system billions of years ago. It remains neutral in most conflicts, intervening only when the balance of the universe is threatened. Some theorize it's actually a fragment of the cosmic entity that created the universe itself.",
       },
-      { property: "og:title", content: "Game of Life Simulation" },
+      { property: "og:title", content: "Game of Life" },
       {
         property: "og:description",
         content:

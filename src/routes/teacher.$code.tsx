@@ -340,7 +340,7 @@ function TeacherDashboard() {
           onClick={() => advance(PHASES.PHASE_1)}
           disabled={working || students.length === 0}
         >
-          Start Simulation →
+          Start Game →
         </Button>
       );
     }

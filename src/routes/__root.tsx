@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
+import iconUrl from "./icon.jpg?url";
 
 function NotFoundComponent() {
   return (
@@ -43,6 +44,11 @@ export const Route = createRootRoute({
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "icon",
+        href: iconUrl,
+        type: "image/jpeg",
       },
     ],
   }),
