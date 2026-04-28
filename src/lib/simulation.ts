@@ -164,11 +164,6 @@ export const PHASE_3_FIELDS: FieldDef[] = [
     options: ["month", "year", "semiannual", "week", "biweek", "quarter"],
   },
   {
-    key: "withdraw",
-    label: "and get paid out every <<phase3freq>>",
-    type: "display",
-  },
-  {
     key: "D",
     label: "Your fish put all on red and won! You have fully withdrawn your money by age...",
     type: "number",
@@ -374,7 +369,6 @@ export function formatCurrency(n: number): string {
 
 export function makeLifePlanWordProblem(plan: LifePlan): string {
   return [
-    "Life Plan Word Problem:\n",
     "Phase 1 - Early Career:\n",
     `You are a ${plan.phase1.occupation} living in ${plan.phase1.city}.`,
     `From age ${plan.phase1.A} to ${plan.phase1.B}, you invest ${formatCurrency(plan.phase1.amount)} per ${plan.phase1.freq} at ${plan.phase1.rate}% compound interest.`,
@@ -393,6 +387,5 @@ export function makeLifePlanWordProblem(plan: LifePlan): string {
     `2. What is your balance at age ${plan.phase2.C} after the hold period?`,
     `3. What is your periodic payout amount during retirement under the withdrawal schedule?`,
     "\n",
-    "Write your answers as numbers or calculations based on the three phases above.",
   ].join("\n");
 }

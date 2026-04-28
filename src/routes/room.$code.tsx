@@ -427,11 +427,12 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           title="Early career"
           rows={[
             ["Occupation", plan.phase1.occupation],
-            ["City", plan.phase1.city],
+            ["Location", plan.phase1.city],
             ["Invest", `$${plan.phase1.amount}/${plan.phase1.freq}`],
             ["From age", `${plan.phase1.A}`],
             ["To age", `${plan.phase1.B}`],
-            ["Return", `${plan.phase1.rate}%/yr`],
+            ["Return", `${plan.phase1.rate}%/a`],
+            ["Comp. Freq.", `per ${plan.phase1.freq}`],
           ]}
         />
         <Section
@@ -439,7 +440,8 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           rows={[
             ["Vehicle", plan.phase2.vehicle],
             ["Until age", `${plan.phase2.C}`],
-            ["Return", `${plan.phase2.rate}%/yr`],
+            ["Comp. Freq.", `Annually`],
+            ["Return", `${plan.phase2.rate}%/a`],
           ]}
         />
         <Section
@@ -447,9 +449,10 @@ function AssignmentCard({ plan }: { plan: LifePlan }) {
           rows={[
             ["Location", plan.phase3.location],
             ["Work as", plan.phase3.occupation],
-            ["Withdraw", `$${plan.phase3.withdraw}/${plan.phase3.freq}`],
+            ["Withdraw", `$???/${plan.phase3.freq}`],
             ["Withdraw age", `${plan.phase3.D}`],
-            ["Return", `${plan.phase3.rate}%/yr`],
+            ["Return", `${plan.phase3.rate}%/a`],
+            ["Comp. Freq.", `per ${plan.phase3.freq}`],
           ]}
         />
       </div>

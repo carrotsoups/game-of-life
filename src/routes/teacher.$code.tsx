@@ -181,10 +181,16 @@ function TeacherDashboard() {
     if (assignments.length === 0) return;
     const chunks = assignments.map((assignmentRow, index) => {
       const student = participants.find((p) => p.id === assignmentRow.participant_id);
+      const plan = assignmentRow.assigned_plan as LifePlan;
       return [
         `Student: ${student?.name ?? assignmentRow.participant_id}`,
         "----------------------------------------",
-        makeLifePlanWordProblem(assignmentRow.assigned_plan as LifePlan),
+        makeLifePlanWordProblem(plan),
+        "",
+        "ANSWERS:",
+        `Phase 1: ${formatCurrency(computePhase1(plan))}`,
+        `Phase 2: ${formatCurrency(computePhase2(plan))}`,
+        `Phase 3: ${formatCurrency(computePhase3(plan))}`,
       ].join("\n");
     });
     const text = [
