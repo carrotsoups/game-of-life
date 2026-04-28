@@ -95,7 +95,7 @@ export const PHASE_1_FIELDS: FieldDef[] = [
     key: "freq",
     label: "per...",
     type: "select",
-    options: ["month", "year", "semiannual", "week", "biweek", "quarter"],
+    options: ["month", "year", "semiannum", "week", "biweek", "quarter"],
   },
   {
     key: "rate",
@@ -161,7 +161,7 @@ export const PHASE_3_FIELDS: FieldDef[] = [
     key: "freq",
     label: "compounded per...",
     type: "select",
-    options: ["month", "year", "semiannual", "week", "biweek", "quarter"],
+    options: ["month", "year", "semiannum", "week", "biweek", "quarter"],
   },
   {
     key: "D",
@@ -205,7 +205,7 @@ function futureValue(amount: number, interestRate: number, years: number, freqS:
   const freqMap: Record<string, number> = {
     month: 12,
     year: 1,
-    semiannual: 2,
+    semiannum: 2,
     week: 52,
     biweek: 26,
     quarter: 4,
@@ -221,7 +221,7 @@ function fvLump(principal: number, interestRate: number, years: number, freqS: s
   const freqMap: Record<string, number> = {
     month: 12,
     year: 1,
-    semiannual: 2,
+    semiannum: 2,
     week: 52,
     biweek: 26,
     quarter: 4,
@@ -237,7 +237,7 @@ function payout(presentvalue: number, interestRate: number, years: number, freqS
   const freqMap: Record<string, number> = {
     month: 12,
     year: 1,
-    semiannual: 2,
+    semiannum: 2,
     week: 52,
     biweek: 26,
     quarter: 4,
@@ -286,34 +286,52 @@ export interface ParticipantAnswers {
   phase3?: LifePlan["phase3"];
 }
 
-function shuffledIndices(n: number, seed: number, forbidden: number): number[] {
-  // Simple Fisher-Yates seeded shuffle then ensure index !== forbidden if possible
-  const arr = Array.from({ length: n }, (_, i) => i);
-  let s = seed;
-  const rng = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0x100000000;
-  };
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 export function buildAssignments(
   answers: ParticipantAnswers[],
 ): { participantId: string; plan: LifePlan }[] {
   const n = answers.length;
   if (n === 0) return [];
 
-  const pickFor = (selfIdx: number, slotSeed: number) => {
-    const order = shuffledIndices(n, selfIdx * 31 + slotSeed * 7 + 1, selfIdx);
-    // Prefer first non-self with the data; if only self has data fall back to self
-    for (const idx of order) {
-      if (idx !== selfIdx) return idx;
+  // Helper function to shuffle an array
+  function shuffle<T>(arr: T[]): T[] {
+    const result = [...arr];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
     }
-    return order[0];
+    return result;
+  }
+
+  // Collect and shuffle all field values for each field type
+  const phase1Pools = {
+    occupation: shuffle(answers.map(a => a.phase1?.occupation).filter((v): v is string => v !== undefined)),
+    city: shuffle(answers.map(a => a.phase1?.city).filter((v): v is string => v !== undefined)),
+    A: shuffle(answers.map(a => a.phase1?.A).filter((v): v is number => v !== undefined)),
+    B: shuffle(answers.map(a => a.phase1?.B).filter((v): v is number => v !== undefined)),
+    amount: shuffle(answers.map(a => a.phase1?.amount).filter((v): v is number => v !== undefined)),
+    freq: shuffle(answers.map(a => a.phase1?.freq).filter((v): v is string => v !== undefined)),
+    rate: shuffle(answers.map(a => a.phase1?.rate).filter((v): v is number => v !== undefined)),
+  };
+
+  const phase2Pools = {
+    vehicle: shuffle(answers.map(a => a.phase2?.vehicle).filter((v): v is string => v !== undefined)),
+    C: shuffle(answers.map(a => a.phase2?.C).filter((v): v is number => v !== undefined)),
+    rate: shuffle(answers.map(a => a.phase2?.rate).filter((v): v is number => v !== undefined)),
+  };
+
+  const phase3Pools = {
+    location: shuffle(answers.map(a => a.phase3?.location).filter((v): v is string => v !== undefined)),
+    occupation: shuffle(answers.map(a => a.phase3?.occupation).filter((v): v is string => v !== undefined)),
+    rate: shuffle(answers.map(a => a.phase3?.rate).filter((v): v is number => v !== undefined)),
+    freq: shuffle(answers.map(a => a.phase3?.freq).filter((v): v is string => v !== undefined)),
+    D: shuffle(answers.map(a => a.phase3?.D).filter((v): v is number => v !== undefined)),
+  };
+
+  // Helper to pop a value from a pool, keeping the last one
+  const popOrKeepLast = <T,>(arr: T[]): T => {
+    if (arr.length === 0) throw new Error("Empty pool");
+    if (arr.length <= 1) return arr[0];
+    return arr.shift() as T;
   };
 
   const defaultPhase1: LifePlan["phase1"] = {
@@ -339,14 +357,31 @@ export function buildAssignments(
     D: 80,
   };
 
-  return answers.map((self, i) => {
-    const p1Idx = pickFor(i, 1);
-    const p2Idx = pickFor(i, 2);
-    const p3Idx = pickFor(i, 3);
+  // Build assignments by distributing field values
+  return answers.map((self) => {
     const plan: LifePlan = {
-      phase1: answers[p1Idx].phase1 ?? self.phase1 ?? defaultPhase1,
-      phase2: answers[p2Idx].phase2 ?? self.phase2 ?? defaultPhase2,
-      phase3: answers[p3Idx].phase3 ?? self.phase3 ?? defaultPhase3,
+      phase1: {
+        occupation: phase1Pools.occupation.length > 0 ? popOrKeepLast(phase1Pools.occupation) : defaultPhase1.occupation,
+        city: phase1Pools.city.length > 0 ? popOrKeepLast(phase1Pools.city) : defaultPhase1.city,
+        A: phase1Pools.A.length > 0 ? popOrKeepLast(phase1Pools.A) : defaultPhase1.A,
+        B: phase1Pools.B.length > 0 ? popOrKeepLast(phase1Pools.B) : defaultPhase1.B,
+        amount: phase1Pools.amount.length > 0 ? popOrKeepLast(phase1Pools.amount) : defaultPhase1.amount,
+        freq: phase1Pools.freq.length > 0 ? popOrKeepLast(phase1Pools.freq) : defaultPhase1.freq,
+        rate: phase1Pools.rate.length > 0 ? popOrKeepLast(phase1Pools.rate) : defaultPhase1.rate,
+      },
+      phase2: {
+        vehicle: phase2Pools.vehicle.length > 0 ? popOrKeepLast(phase2Pools.vehicle) : defaultPhase2.vehicle,
+        C: phase2Pools.C.length > 0 ? popOrKeepLast(phase2Pools.C) : defaultPhase2.C,
+        rate: phase2Pools.rate.length > 0 ? popOrKeepLast(phase2Pools.rate) : defaultPhase2.rate,
+      },
+      phase3: {
+        location: phase3Pools.location.length > 0 ? popOrKeepLast(phase3Pools.location) : defaultPhase3.location,
+        occupation: phase3Pools.occupation.length > 0 ? popOrKeepLast(phase3Pools.occupation) : defaultPhase3.occupation,
+        rate: phase3Pools.rate.length > 0 ? popOrKeepLast(phase3Pools.rate) : defaultPhase3.rate,
+        freq: phase3Pools.freq.length > 0 ? popOrKeepLast(phase3Pools.freq) : defaultPhase3.freq,
+        D: phase3Pools.D.length > 0 ? popOrKeepLast(phase3Pools.D) : defaultPhase3.D,
+        withdraw: defaultPhase3.withdraw,
+      },
     };
     return { participantId: self.participantId, plan };
   });
@@ -386,6 +421,5 @@ export function makeLifePlanWordProblem(plan: LifePlan): string {
     `1. What is your balance at age ${plan.phase1.B} after the early career investment period?`,
     `2. What is your balance at age ${plan.phase2.C} after the hold period?`,
     `3. What is your periodic payout amount during retirement under the withdrawal schedule?`,
-    "\n",
   ].join("\n");
 }

@@ -187,7 +187,7 @@ function TeacherDashboard() {
         "----------------------------------------",
         makeLifePlanWordProblem(plan),
         "",
-        "ANSWERS:",
+        "\n\nANSWERS:",
         `Phase 1: ${formatCurrency(computePhase1(plan))}`,
         `Phase 2: ${formatCurrency(computePhase2(plan))}`,
         `Phase 3: ${formatCurrency(computePhase3(plan))}`,
