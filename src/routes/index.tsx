@@ -123,7 +123,7 @@ function HomePage() {
           </span>
         </div>
         <h1 className="bg-[image:var(--gradient-hero)] bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
-          Life Simulation
+          Game of Life
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Plan three phases of a financial life: investing, holding, retirement
@@ -131,9 +131,9 @@ function HomePage() {
       </header>
 
       <div className="grid w-full gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden border-2 p-8 shadow-[var(--shadow-elegant)] transition-shadow hover:shadow-[var(--shadow-glow)]">
+        <Card className="overflow-hidden border-2 p-8 shadow-[var(--shadow-elegant)] transition-shadow">
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[image:var(--gradient-hero)] text-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-lg">
               🎓
             </div>
             <div>
@@ -155,7 +155,7 @@ function HomePage() {
             <Button
               variant="hero"
               size="lg"
-              className="w-full"
+              className="w-full hover:shadow-[var(--shadow-elegant)]"
               onClick={handleCreate}
               disabled={busy}
             >
@@ -164,9 +164,9 @@ function HomePage() {
           </div>
         </Card>
 
-        <Card className="overflow-hidden border-2 p-8 shadow-[var(--shadow-elegant)] transition-shadow hover:shadow-[var(--shadow-glow)]">
+        <Card className="overflow-hidden border-2 p-8 shadow-[var(--shadow-elegant)] transition-shadow">
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[image:var(--gradient-warm)] text-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-lg">
               ✋
             </div>
             <div>
@@ -199,7 +199,7 @@ function HomePage() {
             <Button
               variant="warm"
               size="lg"
-              className="w-full"
+              className="w-full transition-[transform] duration-300 hover:-translate-y-0.5"
               onClick={handleJoin}
               disabled={busy}
             >
@@ -210,7 +210,7 @@ function HomePage() {
       </div>
 
       <footer className="text-center text-xs text-muted-foreground">
-        Built for  triple T · herro 
+        Built for  triple T and TT · 🪵⚾ & 🦈👟
       </footer>
     </main>
   );
